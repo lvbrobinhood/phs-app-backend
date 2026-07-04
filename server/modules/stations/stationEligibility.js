@@ -71,9 +71,9 @@ const eligibilityRules = {
       hcsr?.hxHcsrQ6 === "Yes" ||
       pmhx?.PMHX7 === "Yes" ||
       phq?.PHQ10 >= 10 ||
-      phq?.PHQ9 == "1 - Several days" ||
-      phq?.PHQ9 == "2 - More than half the days" ||
-      phq?.PHQ9 == "3 - Nearly everyday"),
+      phq?.PHQ9 === "1 - Several days" ||
+      phq?.PHQ9 === "2 - More than half the days" ||
+      phq?.PHQ9 === "3 - Nearly everyday"),
 };
 
 const eligibilityRows = [
