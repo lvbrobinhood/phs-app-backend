@@ -5,6 +5,8 @@ const { createApp } = require("../../server/app");
 const { JWT_SECRET } = require("../../server/middleware/auth");
 const { hashPassword } = require("../../functions/hash.cjs");
 
+const STRONG_PASSWORD = "StrongPass1!";
+
 function createProfilesCollection(initialUsers = []) {
   const users = initialUsers.map((user) => ({ ...user }));
 
@@ -144,7 +146,7 @@ describe("auth routes integration", () => {
 
     await request(app)
       .post("/api/handleSignup")
-      .send({ email: "taken@example.com", password: "secret" })
+      .send({ email: "taken@example.com", password: STRONG_PASSWORD })
       .expect(200)
       .expect(({ body }) => {
         expect(body).toEqual({ result: false, error: "Email already taken" });
@@ -159,7 +161,7 @@ describe("auth routes integration", () => {
 
     const response = await request(app)
       .post("/api/handleSignup")
-      .send({ email: "new@example.com", password: "secret" })
+      .send({ email: "new@example.com", password: STRONG_PASSWORD })
       .expect(200);
 
     expect(response.body).toEqual({
@@ -170,7 +172,7 @@ describe("auth routes integration", () => {
       expect.objectContaining({
         username: "new@example.com",
         email: "new@example.com",
-        password: await hashPassword("secret"),
+        password: await hashPassword(STRONG_PASSWORD),
         is_admin: false,
         last_login: expect.any(Date),
       }),
@@ -247,7 +249,7 @@ describe("auth routes integration", () => {
     await request(app)
       .post("/api/resetPassword")
       .set("Authorization", `Bearer ${adminToken}`)
-      .send({ username: "reset@example.com", newPassword: "new-secret" })
+      .send({ username: "reset@example.com", newPassword: STRONG_PASSWORD })
       .expect(200)
       .expect(({ body }) => {
         expect(body).toEqual({
@@ -259,6 +261,6 @@ describe("auth routes integration", () => {
     expect(profiles.users.find((user) => user.username === "user@example.com")).toBeUndefined();
     expect(
       profiles.users.find((user) => user.username === "reset@example.com").password,
-    ).toBe(await hashPassword("new-secret"));
+    ).toBe(await hashPassword(STRONG_PASSWORD));
   });
 });

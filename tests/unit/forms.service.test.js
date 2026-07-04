@@ -2,7 +2,7 @@ const createFormsService = require("../../server/modules/forms/forms.service");
 
 function createFormsRepository(overrides = {}) {
   return {
-    findPatientByQueueNo: vi.fn().mockResolvedValue({ queueNo: 1 }),
+    findPatientByQueueNo: vi.fn().mockResolvedValue({ queueNo: 22 }),
     insertFormDocument: vi.fn().mockResolvedValue({ insertedId: "form-id" }),
     updatePatient: vi.fn().mockResolvedValue({ modifiedCount: 1 }),
     updateFormDocument: vi.fn().mockResolvedValue({ modifiedCount: 1 }),
@@ -36,7 +36,7 @@ describe("forms.service", () => {
         createService();
 
       await expect(
-        service.submitForm("triageForm", Number.NaN, { answer: "yes" }, { is_admin: false }),
+        service.submitForm("customForm", Number.NaN, { answer: "yes" }, { is_admin: false }),
       ).resolves.toEqual({
         status: 400,
         body: { result: false, error: "Invalid patient id" },
@@ -56,7 +56,7 @@ describe("forms.service", () => {
       });
 
       await expect(
-        service.submitForm("triageForm", 22, { answer: "yes" }, { is_admin: false }),
+        service.submitForm("customForm", 22, { answer: "yes" }, { is_admin: false }),
       ).resolves.toEqual({
         status: 404,
         body: { result: false, error: "Patient not found" },
@@ -83,38 +83,24 @@ describe("forms.service", () => {
 
   describe("first-time submission", () => {
     it("inserts the form, marks the patient record, and triggers downstream callbacks", async () => {
-      const payload = { triageQ1: "No" };
+      const payload = { answer: "yes" };
       const { service, formsRepository, onFormSubmitted, onFormAReadyCheck } =
         createService();
 
       await expect(
-        service.submitForm("triageForm", 22, payload, { is_admin: false }),
+        service.submitForm("customForm", 22, payload, { is_admin: false }),
       ).resolves.toEqual({ status: 200, body: { result: true } });
 
       expect(formsRepository.insertFormDocument).toHaveBeenCalledWith(
-        "triageForm",
+        "customForm",
         22,
         payload,
       );
       expect(formsRepository.updatePatient).toHaveBeenCalledWith(22, {
-        $set: { triageForm: 22 },
+        $set: { customForm: 22 },
       });
       expect(onFormSubmitted).toHaveBeenCalledWith(22);
       expect(onFormAReadyCheck).toHaveBeenCalledWith(22);
-    });
-
-    it("maps a known form key to its collection before submitting", async () => {
-      const { service, formsRepository } = createService();
-
-      await expect(
-        service.submitFormByKey("triage", 22, { triageQ1: "No" }, { is_admin: false }),
-      ).resolves.toEqual({ status: 200, body: { result: true } });
-
-      expect(formsRepository.insertFormDocument).toHaveBeenCalledWith(
-        "triageForm",
-        22,
-        { triageQ1: "No" },
-      );
     });
   });
 
@@ -123,7 +109,7 @@ describe("forms.service", () => {
       const formsRepository = createFormsRepository({
         findPatientByQueueNo: vi.fn().mockResolvedValue({
           queueNo: 22,
-          triageForm: 22,
+          customForm: 22,
         }),
       });
       const { service, onFormSubmitted, onFormAReadyCheck } = createService({
@@ -131,9 +117,9 @@ describe("forms.service", () => {
       });
 
       const result = await service.submitForm(
-        "triageForm",
+        "customForm",
         22,
-        { triageQ1: "updated" },
+        { answer: "updated" },
         { is_admin: false },
       );
 
@@ -148,7 +134,7 @@ describe("forms.service", () => {
       const formsRepository = createFormsRepository({
         findPatientByQueueNo: vi.fn().mockResolvedValue({
           queueNo: 22,
-          triageForm: 22,
+          customForm: 22,
         }),
       });
       const { service, onFormSubmitted, onFormAReadyCheck } = createService({
@@ -157,18 +143,18 @@ describe("forms.service", () => {
 
       await expect(
         service.submitForm(
-          "triageForm",
+          "customForm",
           22,
-          { triageQ1: "updated" },
+          { answer: "updated" },
           { is_admin: true, email: "admin@example.com" },
         ),
       ).resolves.toEqual({ status: 200, body: { result: true } });
 
       expect(formsRepository.updateFormDocument).toHaveBeenCalledWith(
-        "triageForm",
+        "customForm",
         22,
         expect.objectContaining({
-          triageQ1: "updated",
+          answer: "updated",
           lastEdited: expect.any(Date),
           lastEditedBy: "admin@example.com",
         }),
@@ -195,7 +181,7 @@ describe("forms.service", () => {
       });
 
       await expect(
-        service.submitForm("triageForm", 22, { triageQ1: "No" }, { is_admin: false }),
+        service.submitForm("customForm", 22, { answer: "yes" }, { is_admin: false }),
       ).resolves.toEqual({ status: 200, body: { result: true } });
 
       expect(formsRepository.insertFormDocument).toHaveBeenCalled();
@@ -212,7 +198,7 @@ describe("forms.service", () => {
       });
 
       await expect(
-        service.submitForm("triageForm", 22, { triageQ1: "No" }, { is_admin: false }),
+        service.submitForm("customForm", 22, { answer: "yes" }, { is_admin: false }),
       ).resolves.toEqual({ status: 200, body: { result: true } });
 
       expect(formsRepository.insertFormDocument).toHaveBeenCalled();
@@ -230,8 +216,8 @@ describe("forms.service", () => {
         findPatientByQueueNo: vi.fn().mockResolvedValue({
           queueNo: 22,
           initials: "ABC",
-          registrationForm: 22,
-          triageForm: 22,
+          alphaForm: 22,
+          betaForm: 22,
         }),
       });
       const { service } = createService({ formsRepository });
@@ -240,7 +226,7 @@ describe("forms.service", () => {
         status: 200,
         body: {
           result: true,
-          data: { registrationForm: true, triageForm: true },
+          data: { alphaForm: true, betaForm: true },
         },
       });
     });
@@ -249,12 +235,12 @@ describe("forms.service", () => {
       const formsRepository = createFormsRepository({
         findPatientByQueueNo: vi.fn().mockResolvedValue({
           queueNo: 22,
-          registrationForm: 22,
-          triageForm: 22,
+          alphaForm: 22,
+          betaForm: 22,
         }),
         findFormDocument: vi
           .fn()
-          .mockResolvedValueOnce({ form: "registration" })
+          .mockResolvedValueOnce({ form: "alpha" })
           .mockResolvedValueOnce(null),
       });
       const { service } = createService({ formsRepository });
@@ -263,29 +249,29 @@ describe("forms.service", () => {
         status: 200,
         body: {
           result: true,
-          data: { registrationForm: { form: "registration" } },
+          data: { alphaForm: { form: "alpha" } },
         },
       });
 
       expect(formsRepository.findFormDocument).toHaveBeenNthCalledWith(
         1,
-        "registrationForm",
+        "alphaForm",
         22,
       );
       expect(formsRepository.findFormDocument).toHaveBeenNthCalledWith(
         2,
-        "triageForm",
+        "betaForm",
         22,
       );
     });
 
     it("validates and fetches a specific form collection", async () => {
       const formsRepository = createFormsRepository({
-        findFormDocument: vi.fn().mockResolvedValue({ form: "triage" }),
+        findFormDocument: vi.fn().mockResolvedValue({ form: "custom" }),
       });
       const { service } = createService({ formsRepository });
 
-      await expect(service.getPatientForm(Number.NaN, "triageForm")).resolves.toEqual({
+      await expect(service.getPatientForm(Number.NaN, "customForm")).resolves.toEqual({
         status: 400,
         body: { result: false, error: "Bad request" },
       });
@@ -293,28 +279,21 @@ describe("forms.service", () => {
         status: 400,
         body: { result: false, error: "Bad request" },
       });
-      await expect(service.getPatientForm(22, "triageForm")).resolves.toEqual({
+      await expect(service.getPatientForm(22, "customForm")).resolves.toEqual({
         status: 200,
-        body: { result: true, data: { form: "triage" } },
+        body: { result: true, data: { form: "custom" } },
       });
     });
 
-    it("validates form keys and maps known keys to collection names", async () => {
-      const formsRepository = createFormsRepository({
-        findFormDocument: vi.fn().mockResolvedValue({ form: "triage" }),
-      });
-      const { service } = createService({ formsRepository });
+    it("rejects unknown form keys before fetching by key", async () => {
+      const { service, formsRepository } = createService();
 
       await expect(service.getPatientFormByKey(22, "unknownForm")).resolves.toEqual({
         status: 404,
         body: { result: false, error: "Unknown form" },
       });
-      await expect(service.getPatientFormByKey(22, "triage")).resolves.toEqual({
-        status: 200,
-        body: { result: true, data: { form: "triage" } },
-      });
 
-      expect(formsRepository.findFormDocument).toHaveBeenCalledWith("triageForm", 22);
+      expect(formsRepository.findFormDocument).not.toHaveBeenCalled();
     });
   });
 
@@ -381,5 +360,6 @@ describe("forms.service", () => {
         "user@example.com",
       );
     });
+
   });
 });
