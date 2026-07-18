@@ -1,5 +1,29 @@
 const { getFormDefinition } = require("../forms/formRegistry");
 
+const activeStationOrder = [
+  "reg",
+  "mammobus",
+  "triage",
+  "hxtaking",
+  "hsg",
+  "cancer365",
+  "oralhealth",
+  "vax",
+  "scoliosis",
+  "podiatry",
+  "dietitiansconsult",
+  "wce",
+  "gericog",
+  "gerimobility",
+  "ophthal",
+  "hpv",
+  "audio",
+  "socialservice",
+  "mentalhealth",
+  "doctorsconsult",
+  "screeningreview",
+];
+
 const stationRegistry = {
   reg: {
     key: "reg",
@@ -41,11 +65,18 @@ const stationRegistry = {
   },
   hsg: {
     key: "hsg",
-    displayName: "HealthierSG",
+    displayName: "Healthier SG",
     eligibilityName: "Healthier SG Booth",
     route: "hsg",
     requiredForms: ["hsg"],
     eligibilityRule: "healthierSg",
+    active: true,
+  },
+  cancer365: {
+    key: "cancer365",
+    displayName: "365 Cancer Screening",
+    route: "cancer365",
+    requiredForms: ["cancer365"],
     active: true,
   },
   fit: {
@@ -53,7 +84,7 @@ const stationRegistry = {
     displayName: "Fecal Immunochemical Test",
     route: "fit",
     requiredForms: ["fit"],
-    active: true,
+    active: false,
   },
   vax: {
     key: "vax",
@@ -207,12 +238,25 @@ const stationRegistry = {
   },
   doctorsconsult: {
     key: "doctorsconsult",
-    displayName: "Doctor's Station",
+    displayName: "Doctor's Consult",
     eligibilityName: "Doctor's Station",
     route: "doctorsconsult",
     requiredForms: ["doctorConsult"],
     eligibilityRule: "doctorStation",
     active: true,
+  },
+  screeningreview: {
+    key: "screeningreview",
+    displayName: "Screening Review",
+    route: "summary",
+    requiredForms: ["summary"],
+    active: true,
+    isComplete: (record) =>
+      activeStationOrder
+        .filter((stationKey) => stationKey !== "screeningreview")
+        .every((stationKey) =>
+          isStationComplete(record, stationRegistry[stationKey]),
+        ),
   },
 };
 
@@ -222,7 +266,18 @@ const emptyStationStatus = Object.fromEntries(
 
 function getStationDefinitions({ activeOnly = false } = {}) {
   const stations = Object.values(stationRegistry);
-  return activeOnly ? stations.filter((station) => station.active) : stations;
+  if (!activeOnly) {
+    return stations;
+  }
+
+  const order = new Map(
+    activeStationOrder.map((stationKey, index) => [stationKey, index]),
+  );
+  const getOrder = (station) =>
+    order.has(station.key) ? order.get(station.key) : Number.MAX_SAFE_INTEGER;
+  return stations
+    .filter((station) => station.active)
+    .sort((a, b) => getOrder(a) - getOrder(b));
 }
 
 function getStationRegistryInfo({ activeOnly = false } = {}) {

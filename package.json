@@ -19,7 +19,10 @@
     "load:login": "k6 run tests/load/login.js"
   },
   "eslintConfig": {
-    "extends": "react-app"
+    "extends": "react-app",
+    "globals": {
+      "vi": "readonly"
+    }
   },
   "browserslist": {
     "production": [

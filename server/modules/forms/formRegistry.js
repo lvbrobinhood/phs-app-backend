@@ -17,6 +17,12 @@ const formRegistry = {
     collection: "hsgForm",
     patientMarker: "hsgForm",
   },
+  cancer365: {
+    key: "cancer365",
+    title: "365 Cancer Screening",
+    collection: "cancer365Form",
+    patientMarker: "cancer365Form",
+  },
   lungFunction: {
     key: "lungFunction",
     title: "Lung Function",
